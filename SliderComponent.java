@@ -5,7 +5,7 @@ import javax.swing.plaf.basic.BasicSliderUI;
 import java.awt.*;
 import java.util.Hashtable;
 
-public class SliderComponent {
+public class SliderComponent extends Component {
 	private JLabel label;
 	private JSlider slider;
 	private JTextField textField;
@@ -46,7 +46,7 @@ public class SliderComponent {
 			public void paintTrack(Graphics g) {
 				Graphics2D g2d = (Graphics2D) g;
 				g2d.setColor(color);
-				g2d.fillRoundRect(trackRect.x, trackRect.y, trackRect.width, trackRect.height, 10, 10);
+				g2d.fillRoundRect(trackRect.x, trackRect.y, trackRect.width, trackRect.height, 1, 1);
 			}
 		});
 
@@ -65,7 +65,7 @@ public class SliderComponent {
 		textField.setHorizontalAlignment(JTextField.CENTER);
 		textField.setBorder(BorderFactory.createCompoundBorder(
 				BorderFactory.createLineBorder(Color.BLACK, 1),
-				BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+				BorderFactory.createEmptyBorder(1, 1, 1, 1)));
 		textField.setBackground(Color.LIGHT_GRAY);
 		return textField;
 	}
