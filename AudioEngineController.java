@@ -1,5 +1,6 @@
 import javax.sound.sampled.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -7,16 +8,14 @@ public class AudioEngineController {
     private List<SliderComponent> sliders;
     private static SourceDataLine line;
     private Thread playThread;
-    private AtomicBoolean isPlaying;
+    private final AtomicBoolean isPlaying;
     public static int SAMPLE_RATE = 44100;
     public static boolean isSaw = false;
     public static boolean isSquare = false;
     public static boolean isTriangle = false;
     public static boolean isSine = false;
-    private static final int BASS_WAVELENGTH_INTERVAL = 200;
-    private static final int MID_WAVELENGTH_INTERVAL = 2000;
-    private static final int TREBLE_WAVELENGTH_INTERVAL = 200;
-
+    private final int BASS_UPPER_BOUND = 200;
+    private final int MID_UPPER_BOUND = 2000;
     private double bass = 1.0;
     private double mid = 1.0;
     private double treble = 1.0;
@@ -27,16 +26,17 @@ public class AudioEngineController {
         isSine = true;
     }
 
-    public void addSlider(SliderComponent... sliderComponents) {
-        for (SliderComponent sliderComponent : sliderComponents) {
-            sliders.add(sliderComponent);
-        }
-    }
-    public void handlePlayButton(int volume) {
-        double[] values = sliders.stream()
+    private double[] getSliderValues(){
+        return sliders.stream()
                 .mapToDouble(sliderComponent -> Double.parseDouble(sliderComponent.getTextField().getText()))
                 .toArray();
-        new Thread(() -> FourierSoundGenerator(values, volume)).start();
+    }
+
+    public void addSlider(SliderComponent... sliderComponents) {
+        sliders.addAll(Arrays.asList(sliderComponents));
+    }
+    public void handlePlayButton(int volume) {
+        new Thread(() -> FourierSoundGenerator(getSliderValues(), volume)).start();
     }
     private void FourierSoundGenerator(double[] values, int vol) {
         int totalVoices = values.length / 2;
@@ -47,7 +47,6 @@ public class AudioEngineController {
         }
 
         double[] phases = new double[frequencies.length];
-        for (int i = 0; i < phases.length; i++) phases[i] = 0.0;
 
         double[] phaseIncrementations = new double[frequencies.length];
         for (int i = 0; i < phaseIncrementations.length; i++) {
@@ -62,9 +61,8 @@ public class AudioEngineController {
         // Low-pass filter setup
         int filterOrder = 5;  // Number of coefficients for the FIR filter
         double[] filterCoefficients = new double[filterOrder];
-        for (int i = 0; i < filterOrder; i++) {
-            filterCoefficients[i] = 1.0 / filterOrder;  // Simple moving average filter
-        }
+        // Simple moving average filter
+        Arrays.fill(filterCoefficients, 1.0 / filterOrder);
         double[] filterBuffer = new double[filterOrder];
 
         try {
@@ -110,11 +108,8 @@ public class AudioEngineController {
     public void handleHoldToPlay(boolean play, int volume, int harmonics) {
         if (play) {
             isPlaying.set(true);
-            double[] values = sliders.stream()
-                    .mapToDouble(sliderComponent -> Double.parseDouble(sliderComponent.getTextField().getText()))
-                    .toArray();
 
-            playThread = new Thread(() -> soundGeneratorContinuous(values, volume, harmonics));
+            playThread = new Thread(() -> soundGeneratorContinuous(getSliderValues(), volume, harmonics));
             playThread.start();
 
         } else {
@@ -160,7 +155,7 @@ public class AudioEngineController {
         AudioFormat format = new AudioFormat(SAMPLE_RATE, 8, 1, true, true);
         double frequency = calculateFrequency(noteValue, octave);
         double volumeScale = vol / 20.0;
-        double phaseShift = 0;
+        double phaseShift;
 
         try {
             SourceDataLine line = AudioSystem.getSourceDataLine(format);
@@ -208,7 +203,6 @@ public class AudioEngineController {
         }
 
         double[] phases = new double[frequencies.length];
-        for (int i = 0; i < phases.length; i++) phases[i] = 0.0;
 
         double[] phaseIncrementations = new double[frequencies.length];
         for (int i = 0; i < phaseIncrementations.length; i++){
@@ -232,10 +226,10 @@ public class AudioEngineController {
                     for (int k = 0; k < frequencies.length; k++){
                         double baseSignal = Math.sin(phases[k]) * 127f * volumeScale;
                         if (isSine){
-                            if (frequencies[k] < BASS_WAVELENGTH_INTERVAL)
+                            if (frequencies[k] < BASS_UPPER_BOUND)
                                 signal += baseSignal * bass;
 
-                            else if(frequencies[k] < MID_WAVELENGTH_INTERVAL)
+                            else if(frequencies[k] < MID_UPPER_BOUND)
                                 signal += baseSignal * mid;
 
                             else signal += baseSignal * treble;
@@ -244,10 +238,10 @@ public class AudioEngineController {
                         else if (isSaw){
                             double t = (double) i / SAMPLE_RATE;
                             baseSignal += 2.0 * (t * frequencies[k] - Math.floor(0.5 + t * frequencies[k])) * 127.0 * volumeScale;
-                            if (frequencies[k] < BASS_WAVELENGTH_INTERVAL)
+                            if (frequencies[k] < BASS_UPPER_BOUND)
                                 signal += baseSignal * bass;
 
-                            else if(frequencies[k] < MID_WAVELENGTH_INTERVAL)
+                            else if(frequencies[k] < MID_UPPER_BOUND)
                                 signal += baseSignal * mid;
 
                             else
@@ -256,10 +250,10 @@ public class AudioEngineController {
                         }
                         else if (isSquare){
                             baseSignal += Math.signum(Math.sin(phases[k])) * 127.0 * volumeScale;
-                            if (frequencies[k] < BASS_WAVELENGTH_INTERVAL)
+                            if (frequencies[k] < BASS_UPPER_BOUND)
                                 signal += baseSignal * bass;
 
-                            else if(frequencies[k] < MID_WAVELENGTH_INTERVAL)
+                            else if(frequencies[k] < MID_UPPER_BOUND)
                                 signal += baseSignal * mid;
 
                             else
@@ -272,10 +266,10 @@ public class AudioEngineController {
 
                             baseSignal += triangleWave * 127.0 * volumeScale;
 
-                            if (frequencies[k] < BASS_WAVELENGTH_INTERVAL)
+                            if (frequencies[k] < BASS_UPPER_BOUND)
                                 signal += baseSignal * bass;
 
-                            else if(frequencies[k] < MID_WAVELENGTH_INTERVAL)
+                            else if(frequencies[k] < MID_UPPER_BOUND)
                                 signal += baseSignal * mid;
 
                             else

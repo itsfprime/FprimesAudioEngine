@@ -10,9 +10,7 @@ public class AudioEngineGui {
     private JFrame mainWindow;
     private SliderComponent masterVolumeSlider;
     private SliderComponent harmonicSlider;
-    private boolean isThirdCheckOn = false;
-    private boolean isFifthCheckOn = false;
-    private Dimension size = new Dimension(700, 700);
+    private final Dimension size = new Dimension(700, 700);
     public JPanel masterHolderPanel;
     public GridLayout masterGridLayout;
 
@@ -127,13 +125,6 @@ public class AudioEngineGui {
             }
         });
 
-        trebleField.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                controller.setEQ(Float.parseFloat(finalBassField.getText()), Float.parseFloat(finalMidField.getText()), Float.parseFloat(finalTrebleField.getText()));
-            }
-        });
-
         EQPanel.add(new JLabel("Bass"));
         EQPanel.add(bassField);
         EQPanel.add(new JLabel("Mid"));
@@ -184,12 +175,5 @@ public class AudioEngineGui {
         panel.add(playButton);
 
         return panel;
-    }
-
-    public void createVisualizer(){
-        JPanel visPanel = new JPanel();
-        visPanel.setVisible(true);
-
-        refreshWindow();
     }
 }
